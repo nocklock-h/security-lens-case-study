@@ -157,6 +157,11 @@ LLM은 분석 결과를 설명하고 사용자가 확인해야 할 내용을 정
 
 ## Architecture
 
+![Security Lens Architecture](./security-lens-architecture.png)
+
+Security Lens는 OCR, 규칙 기반 개인정보 탐지, EXIF 분석과 Risk Scoring을 먼저 수행한 뒤  
+분석 결과를 ChatGPT Terra에 전달해 사용자에게 설명과 권고사항을 제공하도록 구성했습니다.
+
 ```text
 Browser
    ↓
