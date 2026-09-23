@@ -1,14 +1,12 @@
-# Security Lens
-
 > AI-assisted privacy risk analyzer for images and documents.
 
 이미지 속 개인정보와 EXIF 메타데이터를 분석해  
-업로드 전에 개인정보 노출 위험을 확인할 수 있도록 만든 Spring Boot 기반 MVP입니다.
+업로드 전에 개인정보 노출 위험을 확인할 수 있도록 만든 **Spring Boot 기반 MVP**입니다.
 
-**Java 17 · Spring Boot · OCR · EXIF · Local LLM · Railway**
+**Java 17 · Spring Boot · OCR · EXIF · ChatGPT Terra · Railway**
 
 > Source code is kept private.  
-> This repository documents the product, architecture, implementation decisions, and lessons learned.
+> 이 저장소는 Security Lens의 제품 구조, 구현 과정, 기술적 의사결정과 학습 내용을 정리한 공개 Case Study입니다.
 
 ---
 
@@ -16,7 +14,7 @@
 
 사진이나 문서를 온라인에 업로드할 때 사용자가 눈으로 확인하기 어려운 개인정보가 함께 노출될 수 있습니다.
 
-예를 들어 이미지 안에는 다음 정보가 포함될 수 있습니다.
+예를 들어 이미지에는 다음과 같은 정보가 포함될 수 있습니다.
 
 - 전화번호
 - 이메일 주소
@@ -37,7 +35,7 @@ Security Lens는 업로드 전에 이런 정보를 한 번에 분석하고
 
 Security Lens는 이미지를 업로드하면 여러 분석 단계를 거쳐 개인정보 노출 위험을 보여줍니다.
 
-### Core flow
+### Core Flow
 
 ```text
 Image Upload
@@ -50,7 +48,7 @@ EXIF Metadata Analysis
       ↓
 Risk Score Calculation
       ↓
-Local LLM Analysis
+ChatGPT Terra Analysis
       ↓
 Risk Level + Explanation
 ```
@@ -75,7 +73,7 @@ Risk Level + Explanation
 
 ## Key Features
 
-### 1. OCR-based personal information detection
+### 1. OCR-based Personal Information Detection
 
 이미지에 포함된 텍스트를 OCR로 추출한 뒤 개인정보 패턴을 분석합니다.
 
@@ -86,11 +84,14 @@ Risk Level + Explanation
 - Name-like information
 - Sensitive text patterns
 
+OCR 결과를 그대로 신뢰하기보다  
+규칙 기반 탐지와 함께 사용해 개인정보 후보를 식별하도록 구성했습니다.
+
 ---
 
-### 2. EXIF metadata analysis
+### 2. EXIF Metadata Analysis
 
-이미지 파일에 포함된 metadata를 분석합니다.
+이미지 파일에 포함된 메타데이터를 분석합니다.
 
 주요 분석 정보:
 
@@ -99,45 +100,58 @@ Risk Level + Explanation
 - Device / camera information
 - Other available EXIF metadata
 
-화면에서 보이지 않는 정보까지 분석 대상으로 포함했습니다.
+사용자가 화면만 보고는 알기 어려운 정보까지 분석 대상에 포함했습니다.
 
 ---
 
 ### 3. Privacy Risk Score
 
-각 탐지 결과를 단순히 나열하는 대신  
-사용자가 빠르게 위험도를 이해할 수 있도록 Risk Score와 Risk Level을 설계했습니다.
+탐지된 정보를 단순히 나열하는 대신  
+사용자가 빠르게 위험 수준을 이해할 수 있도록 **Risk Score와 Risk Level**을 설계했습니다.
 
 ```text
-Detected privacy signals
+Detected Privacy Signals
         ↓
-Weighted risk calculation
+Weighted Risk Calculation
         ↓
 Risk Score
         ↓
 Risk Level
 ```
 
-목표는 완벽한 보안 판정이 아니라,
+목표는 완벽한 보안 판정을 제공하는 것이 아니라,
 
-> 사용자가 추가 확인이 필요한 파일을 빠르게 식별하는 것
+> 사용자가 추가 확인이 필요한 파일을 빠르게 식별하도록 돕는 것
 
 입니다.
 
 ---
 
-### 4. Local LLM analysis
+### 4. LLM-assisted Risk Analysis
 
-OCR / EXIF / rule-based 결과를 기반으로  
-Local LLM이 추가적인 위험 설명을 생성하도록 구성했습니다.
+OCR / EXIF / rule-based 분석 결과를 기반으로  
+**ChatGPT Terra**가 추가적인 위험 설명과 사용자 관점의 해석을 생성하도록 구성했습니다.
 
-사용 모델:
+현재 AI 분석 계층:
 
-- Ollama
-- Gemma 3
+- ChatGPT Terra
 
-Local LLM을 선택한 이유는 개인정보 분석 서비스 특성상  
-가능한 한 민감한 데이터를 외부 AI API로 보내지 않는 구조를 실험하고 싶었기 때문입니다.
+LLM이 개인정보 탐지 전체를 판단하도록 하지 않고 다음과 같이 역할을 분리했습니다.
+
+```text
+OCR / Rules / Metadata
+          ↓
+Deterministic Analysis
+          ↓
+Risk Scoring
+          ↓
+ChatGPT Terra
+          ↓
+Explanation / Recommendation
+```
+
+전화번호나 이메일처럼 구조가 명확한 정보는 rule-based 방식으로 탐지하고,  
+LLM은 분석 결과를 설명하고 사용자가 확인해야 할 내용을 정리하는 **보조 계층**으로 사용했습니다.
 
 ---
 
@@ -151,14 +165,14 @@ Spring Boot API
    ├── Personal Info Detector
    ├── EXIF Analyzer
    ├── Risk Scoring
-   └── Local LLM Analyzer
+   └── ChatGPT Terra Analyzer
              ↓
-          Ollama
+   Risk Explanation / Recommendation
              ↓
-          Gemma 3
+          Result UI
 ```
 
-Application deployment:
+### Deployment
 
 ```text
 Client
@@ -166,6 +180,10 @@ Client
 Railway
   ↓
 Spring Boot Application
+  ↓
+Analysis Pipeline
+  ↓
+ChatGPT Terra
 ```
 
 ---
@@ -175,9 +193,9 @@ Spring Boot Application
 | Area | Technology |
 |---|---|
 | Backend | Java 17, Spring Boot |
-| Image analysis | OCR |
+| Image Analysis | OCR |
 | Metadata | EXIF / metadata-extractor |
-| AI | Ollama, Gemma 3 |
+| AI | ChatGPT Terra |
 | Frontend | HTML, CSS, JavaScript |
 | Deployment | Railway |
 | Build | Gradle |
@@ -190,82 +208,133 @@ Spring Boot Application
 ### Why Spring Boot?
 
 기존 Java/Spring 개발 경험을 활용하면서  
-이미지 분석, API, AI integration을 하나의 서비스 흐름으로 구현하기 위해 선택했습니다.
+이미지 분석, API, 개인정보 탐지, AI integration을 하나의 서비스 흐름으로 구현하기 위해 선택했습니다.
+
+Spring Boot 기반으로 전체 분석 파이프라인을 구성하면서  
+AI 기능을 별도의 실험이 아니라 기존 백엔드 서비스 안에 연결하는 경험을 목표로 했습니다.
 
 ---
 
-### Why Local LLM?
+### Why use an LLM for Additional Analysis?
 
-Security Lens가 다루는 데이터 자체가 개인정보일 가능성이 있기 때문에  
-외부 API 호출만 사용하는 구조보다 로컬 추론 구조도 직접 실험해보고 싶었습니다.
+전화번호나 이메일처럼 구조가 명확한 개인정보는  
+LLM보다 deterministic rule이 더 안정적으로 처리할 수 있다고 판단했습니다.
 
-다만 현재 MVP에서는 성능과 운영 환경의 한계도 존재합니다.
+반면 탐지 결과를 사용자에게 설명하고  
+어떤 부분을 주의해야 하는지 정리하는 과정에서는 LLM이 유용했습니다.
+
+따라서 Security Lens에서는 AI가 모든 판단을 대신하는 구조가 아니라,
+
+```text
+Rule-based Detection
++ OCR
++ EXIF Analysis
++ Risk Scoring
++ LLM Explanation
+```
+
+형태로 각 계층의 역할을 분리했습니다.
+
+현재 MVP에서는 **ChatGPT Terra를 분석 및 설명 계층**으로 사용하고 있습니다.
 
 ---
 
-### Why combine rules with LLM analysis?
+### Why combine Rules with LLM Analysis?
 
-전화번호나 이메일처럼 명확한 패턴은 deterministic rule이 더 안정적입니다.
+LLM 하나에 개인정보 탐지와 위험 판단을 모두 맡기면  
+일관성과 검증 가능성이 떨어질 수 있다고 판단했습니다.
 
-따라서 LLM 하나에 모든 판단을 맡기기보다:
+그래서 다음과 같이 역할을 나누었습니다.
 
 ```text
 Rules / OCR / Metadata
           +
-        LLM
+      Risk Scoring
+          +
+    LLM Explanation
 ```
 
-형태로 역할을 나누었습니다.
+- 명확한 개인정보 패턴 → deterministic rule
+- 이미지 텍스트 추출 → OCR
+- 숨겨진 파일 정보 → EXIF analysis
+- 위험도 계산 → Risk Score
+- 사용자 관점 설명 → LLM
 
-LLM은 최종 판정자가 아니라 **추가 분석과 설명을 제공하는 보조 계층**으로 사용했습니다.
+LLM은 최종 판정자가 아니라  
+**추가 분석과 설명을 제공하는 보조 계층**으로 사용했습니다.
 
 ---
 
 ## Challenges & Solutions
 
-### Local LLM performance
+### Local LLM Experiment
 
-초기에는 GPU / CUDA 환경 문제를 경험했습니다.
+개발 초기에는 **Ollama와 Gemma 3**를 이용한 로컬 LLM 구조를 실험했습니다.
 
-개발 과정에서 CPU 실행으로 전환해  
-기능 검증을 우선 진행하고 MVP를 완성했습니다.
+개인정보를 외부 AI 서비스로 보내지 않는 구조를 검토하기 위해  
+로컬 추론 환경을 직접 구성했고 GPU / CUDA 및 CPU inference 환경도 테스트했습니다.
 
-이 경험을 통해 모델 성능뿐 아니라  
-실제 실행 환경과 배포 제약도 제품 설계의 일부라는 점을 배웠습니다.
+하지만 MVP를 완성하고 실제 서비스 흐름을 검증하는 과정에서 다음과 같은 제약을 경험했습니다.
+
+- GPU / CUDA 환경 구성
+- 로컬 추론 성능
+- CPU inference 속도
+- 실행 환경 복잡도
+- 배포 환경 제약
+
+이후 현재 버전에서는 **ChatGPT Terra를 AI 분석 계층으로 사용하는 구조로 변경**했습니다.
+
+이 과정을 통해 모델 자체의 성능뿐 아니라
+
+> **제품 요구사항 · 실행 환경 · 성능 · 운영 복잡도**
+
+를 함께 고려해야 한다는 점을 경험했습니다.
 
 ---
 
-### Port conflicts
+### Port Conflicts during Local LLM Experiments
 
-Spring Boot와 Ollama를 함께 실행하면서  
-8080 / 11434 포트 충돌 및 환경 설정 문제를 해결했습니다.
+초기 Ollama 실험 과정에서 Spring Boot와 함께 실행하면서  
+8080 / 11434 포트 및 환경 설정 문제를 해결했습니다.
 
-이를 통해 애플리케이션 코드 외에도  
-실행 환경을 재현하고 문제를 추적하는 과정의 중요성을 경험했습니다.
+현재 서비스 구조에서는 Ollama를 사용하지 않지만,  
+이 과정에서 애플리케이션 코드뿐 아니라 실행 환경을 재현하고 문제를 추적하는 경험을 얻었습니다.
 
 ---
 
-### Risk scoring
+### Risk Scoring
 
-단순히 “개인정보가 발견되었습니다”라고 표시하는 것보다  
-사용자에게 어느 정도 주의가 필요한지를 표현할 방법이 필요했습니다.
+단순히
 
-그래서 각 탐지 결과를 하나의 Risk Score / Risk Level로 통합하는 구조를 설계했습니다.
+> “개인정보가 발견되었습니다.”
+
+라고 표시하는 것만으로는 사용자가 실제 위험 수준을 빠르게 판단하기 어렵다고 생각했습니다.
+
+그래서 여러 탐지 결과를 하나의 **Risk Score / Risk Level**로 통합하는 구조를 설계했습니다.
+
+현재 점수는 절대적인 보안 평가가 아니라  
+사용자가 추가 검토가 필요한 파일을 식별하도록 돕는 신호로 사용합니다.
 
 ---
 
 ## What I Learned
 
-Security Lens를 만들면서 가장 크게 배운 점은  
-AI 기능 하나를 추가하는 것과 실제 제품 흐름에 AI를 넣는 것은 다르다는 점이었습니다.
+Security Lens를 만들면서 가장 크게 배운 점은
+
+> **AI 기능 하나를 추가하는 것과 실제 제품 흐름 안에 AI를 넣는 것은 다르다**
+
+는 점이었습니다.
 
 특히 다음을 경험했습니다.
 
-- 기존 backend와 AI inference 연결
+- 기존 backend와 AI analysis layer 연결
 - OCR 결과의 불확실성 처리
 - rule-based detection과 LLM 역할 분리
+- EXIF metadata 분석
 - 개인정보를 다루는 제품의 데이터 흐름 고민
-- 로컬 모델의 실행 환경 제약
+- Local LLM과 외부 AI 연동 방식의 trade-off
+- 모델 선택과 운영 환경의 관계
+- Risk Score 설계
 - MVP를 실제 URL까지 배포하는 과정
 
 또한 완벽한 기능을 기다리기보다
@@ -289,28 +358,46 @@ AI 기능 하나를 추가하는 것과 실제 제품 흐름에 AI를 넣는 것
 - Automated tests
 - CI/CD
 - AWS deployment architecture
+- Improved privacy handling for AI analysis
+- Clearer separation between deterministic analysis and AI-generated explanation
 
 ---
 
 ## Project Status
 
-Security Lens was developed as an MVP for the **Wanted AI Championship 2026**.
+Security Lens는 **Wanted AI Championship 2026**을 위해 개발한 MVP입니다.
 
-The original implementation repository remains private.
+실제 구현 소스가 포함된 원본 저장소는 Private으로 유지하고 있습니다.
 
-This public repository is maintained as a technical case study for the project.
+이 공개 저장소는 프로젝트의
+
+- Problem
+- Architecture
+- Implementation Decisions
+- Challenges
+- Product Flow
+- Lessons Learned
+
+를 보여주기 위한 **Technical Case Study**입니다.
 
 ---
 
 ## About Nocklock
 
-I build and document small products around:
+Java/Spring 백엔드 개발을 기반으로  
+AI를 실제 제품 흐름에 연결하는 방법을 실험하고 기록하고 있습니다.
+
+현재 관심 분야:
 
 - Java / Spring Boot
 - AI-assisted development
-- privacy & security tooling
-- deployment
-- developer automation
+- Backend systems
+- Privacy & security tooling
+- Deployment workflows
+- Developer automation
+- Small software products
+
+### Links
 
 - [Nocklock Blog](https://nocklock.tistory.com/)
 - [GitHub Profile](https://github.com/nocklock-h)
