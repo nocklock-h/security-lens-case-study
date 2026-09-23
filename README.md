@@ -57,6 +57,22 @@ Risk Level + Explanation
 
 ---
 
+## Demo
+
+### Upload & Analysis
+
+![Security Lens main screen](./security-lens-home.png)
+
+### Analysis Result
+
+![Security Lens analysis result](./security-lens-result.png)
+
+### Risk Analysis
+
+![Security Lens risk analysis](./security-lens-risk-analysis.png)
+
+---
+
 ## Key Features
 
 ### 1. OCR-based personal information detection
